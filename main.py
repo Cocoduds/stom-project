@@ -51,3 +51,15 @@ print(B_x)
 plt.plot(bin_edges, B_x, label='B(x)')
 plt.legend()
 plt.show()
+
+
+#%% Background Parameterisation
+
+chi_vals = []
+
+for val in vals:
+    chi_val = stom.get_B_chi(val,(104,119.3),30,A,lamb)
+    chi_vals.append(chi_val)
+    next
+    
+print(chi_vals)
