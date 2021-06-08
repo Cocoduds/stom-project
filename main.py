@@ -10,14 +10,17 @@ vals = STOM_higgs_tools.generate_data()
 
 bin_heights, bin_edges = np.histogram(vals, range=[104, 155], bins=30)
 bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2.
+sns.scatterplot(x=bin_centres, y=bin_heights, s=10)
 plt.errorbar(bin_centres, bin_heights, np.sqrt(bin_heights), fmt=',', capsize=2)
 
+sns.set_style("darkgrid")
+plt.grid()
 plt.xlabel("$m_{\gamma\gamma} (MeV)$")  # Latex syntax
 plt.ylabel("Number of entries")
 # plt.show()
 
 
-# %% Background parametrisation
+# Background parametrisation
 import scipy.integrate as integrate
 import scipy
 import scipy.optimize
@@ -52,7 +55,7 @@ print('A is', A)
 
 B_x = STOM_higgs_tools.get_B_expectation(bin_edges, A, lamb)
 print(B_x)
-plt.plot(bin_edges, B_x, label='B(x)')
+sns.lineplot(x=bin_edges, y=B_x, label='B(x)')
 plt.grid()
 plt.legend()
 plt.show()
@@ -62,14 +65,11 @@ lamb_values = []
 chi_squared = []
 
 for l in np.arange(26, 29, 0.1):
-    for a in range(70000, 80000, 1000):
+    for a in range(60000, 80000, 1000):
         result = STOM_higgs_tools.get_B_chi(vals, [104, 119.3], 9, a, l)
         chi_squared.append(result)
         lamb_values.append(l)
         a_values.append(a)
-
-plt.plot(a_values[0:30], chi_squared[0:30])
-fig = plt.figure()
 
 sns.set(style="darkgrid")
 ax = plt.axes(projection="3d")
@@ -79,4 +79,6 @@ plt.show()
 
 #%%
 
+i_chi2min = np.argmin(chi_squared)  # gives index where chi_squared is min.
+print(f"A = {a_values[i_chi2min]}, lamb = {lamb_values[i_chi2min]}, chi2 = {chi_squared[i_chi2min]}")
 print(STOM_higgs_tools.get_B_chi(vals, [104, 119.3], 9, A, lamb))
