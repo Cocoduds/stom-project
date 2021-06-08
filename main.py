@@ -58,9 +58,16 @@ plt.legend()
 
 plt.show()
 
-
 #%%
 
+chi_value_background_only = STOM_higgs_tools.get_B_chi(background_data,(104,119.3),9,A,lamb) #it is 9 since we consider only before the bump
+print(chi_value_background_only , 'wtaf')
+
+chi_value_with_signal = STOM_higgs_tools.get_B_chi(vals,(104,155),30,A,lamb)
+print(chi_value_with_signal, 'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
+
+
+#%%
 
 chi_valus = STOM_higgs_tools.get_B_chi(background_data,(104,119.3),9,A,lamb) #it is 9 since we consider only before the bump
 print(chi_valus , 'wtaf')
@@ -74,8 +81,43 @@ print(chi_value, 'seeing as this is much higher than for the signal only hypothe
 
 from scipy.stats import chi2
 p_value_background_only = chi2.sf(chi_valus, 1)
-print(p_value_background_only, 'implies we can reject the background only hypotehsis at that sig level')
+print(p_value_background_only, 'implies we can reject the background only hypotehsis at 10% sig level')
 
 p_value_with_signal = chi2.sf(chi_value, 1)
 print(p_value_with_signal,'implies can be accepted at 97% confidence level')
+
+#%%
+
+chi_vals = []
+
+for i in range(10000):
+    vals = STOM_higgs_tools.generate_data()
+    background_data=[j for j in vals if j < 120] #to avoid taking the signal bump, upper limit of 120 MeV set
+    lamb = (sigma_background_data)/(N_background) #maximum likelihood estimator for lambda
+    bin_h, bin_edges = np.histogram(vals, range=[104, 155], bins=30)
+    area_hist = sum(np.diff(background_bin_edges)*background_bin_heights)
+    A = area_hist/(lamb*(np.exp(-104/lamb)-np.exp(-119.3/lamb)))
+    B_x = get_B_expectation(bin_edges, A, lamb)
+    chi_valus = STOM_higgs_tools.get_B_chi(background_data,(104,119.3),9,A,lamb)
+    chi_vals.append(chi_valus)
+    next
+
+print(chi_vals)
+
+bin_h, bin_e = np.histogram(chi_vals, range=[0, 7], bins=40)
+bin_c = (bin_e[:-1] + bin_e[1:])/2.
+plt.errorbar(bin_c, bin_h, np.sqrt(bin_h), fmt=',', capsize=2)
+
+plt.grid()
+plt.xlabel('$\chi^{2}$ Val')
+plt.ylabel('Frequency')
+plt.show()
+#%%
+
+
+bin_heights, bin_edges = np.histogram(chi_vals, range=[0, 7], bins=30)
+bin_centres = (bin_edges[:-1] + bin_edges[1:])/2.
+plt.errorbar(bin_centres, bin_heights, np.sqrt(bin_heights), fmt=',', capsize=2)
+
+plt.show()
 
