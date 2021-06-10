@@ -121,3 +121,127 @@ plt.errorbar(bin_centres, bin_heights, np.sqrt(bin_heights), fmt=',', capsize=2)
 
 plt.show()
 
+#%%
+def fit_func(x): 
+    gaus = 700*np.exp(-(x-125)**2/(2*1.5**2))
+    expo = A*np.exp(-x/lamb)
+    return gaus + expo
+
+
+# bin_heights, bin_edges, patches = plt.hist(vals, range=[104, 155], bins=30)
+
+bin_heights, bin_edges = np.histogram(vals, range=[104, 155], bins=30)
+bin_centres = (bin_edges[:-1] + bin_edges[1:])/2.
+plt.errorbar(bin_centres, bin_heights, np.sqrt(bin_heights), fmt=',', capsize=2)
+
+
+
+x = np.linspace(100,155,200)
+y = fit_func(x)
+
+
+plt.plot(x,y)
+
+def get_B_chi_gaussian(vals, mass_range, nbins):
+    """
+    Calculates the chi-square value of the no-signal hypothesis (i.e background
+    only) for the passed values. Need an expectation - use the analytic form,
+    using the hard coded scale of the exp. That depends on the binning, so pass
+    in as argument. The mass range must also be set - otherwise, its ignored.
+    """
+    bin_heights, bin_edges = np.histogram(vals, range=mass_range, bins=nbins)
+    half_bin_width = 0.5 * (bin_edges[1] - bin_edges[0])
+    ys_expected = fit_func(bin_edges + half_bin_width)
+    chi = 0
+
+    # Loop over bins - all of them for now.
+    for i in range(len(bin_heights)):
+        chi_nominator = (bin_heights[i] - ys_expected[i]) ** 2
+        chi_denominator = ys_expected[i]
+        chi += chi_nominator / chi_denominator
+
+    return chi / float(nbins - 3)  # B has 2 parameters.
+
+chi_value_gaussfit = get_B_chi_gaussian(vals,(104,155),30)
+print(chi_value_gaussfit, 'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
+
+
+#%%
+from scipy.optimize import curve_fit
+
+def fit_func_optimise(x,a,mu,sig): 
+    gaus = a*np.exp(-(x-mu)**2/(2*sig**2))
+    expo = A*np.exp(-x/lamb)
+    return gaus + expo
+
+fit, cov = curve_fit(fit_func_optimise,bin_centres,bin_heights,p0 = [300,125,1.5])
+
+plt.plot(x, fit_func_optimise(x, *fit))
+
+
+def get_B_chi_gaussian_optimal(vals, mass_range, nbins):
+    """
+    Calculates the chi-square value of the no-signal hypothesis (i.e background
+    only) for the passed values. Need an expectation - use the analytic form,
+    using the hard coded scale of the exp. That depends on the binning, so pass
+    in as argument. The mass range must also be set - otherwise, its ignored.
+    """
+    bin_heights, bin_edges = np.histogram(vals, range=mass_range, bins=nbins)
+    half_bin_width = 0.5 * (bin_edges[1] - bin_edges[0])
+    ys_expected = fit_func_optimise(bin_edges + half_bin_width, *fit)
+    chi = 0
+
+    # Loop over bins - all of them for now.
+    for i in range(len(bin_heights)):
+        chi_nominator = (bin_heights[i] - ys_expected[i]) ** 2
+        chi_denominator = ys_expected[i]
+        chi += chi_nominator / chi_denominator
+
+    return chi / float(nbins - 3)  # B has 2 parameters.
+
+
+chi_value_gaussfit_optimal = get_B_chi_gaussian_optimal(vals,(104,155),30)
+print(chi_value_gaussfit_optimal)
+
+#%%
+
+def for_looping_chis_gauss(x,mu): 
+    gaus = fit[0]*np.exp(-(x-mu)**2/(2*fit[2]**2))
+    expo = A*np.exp(-x/lamb)
+    return gaus + expo
+
+
+masses = np.linspace(110,150,80)
+
+
+def get_chi_varying_mass(vals, mass_range, nbins, mu):
+    """
+    Calculates the chi-square value of the no-signal hypothesis (i.e background
+    only) for the passed values. Need an expectation - use the analytic form,
+    using the hard coded scale of the exp. That depends on the binning, so pass
+    in as argument. The mass range must also be set - otherwise, its ignored.
+    """
+    bin_heights, bin_edges = np.histogram(vals, range=mass_range, bins=nbins)
+    half_bin_width = 0.5 * (bin_edges[1] - bin_edges[0])
+    ys_expected = for_looping_chis_gauss(bin_edges + half_bin_width, mu)
+    chi = 0
+
+    # Loop over bins - all of them for now.
+    for i in range(len(bin_heights)):
+        chi_nominator = (bin_heights[i] - ys_expected[i]) ** 2
+        chi_denominator = ys_expected[i]
+        chi += chi_nominator / chi_denominator
+
+    return chi / float(nbins - 3)  # B has 2 parameters.
+
+chi_masses = []
+
+
+for mass in masses:
+    chi = get_chi_varying_mass(vals,(104,155),30,mass)
+    chi_masses.append(chi)
+    
+    
+plt.plot(masses,chi_masses)
+
+
