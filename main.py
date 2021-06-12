@@ -3,9 +3,11 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import numpy as np
 import seaborn as sns
+from scipy.optimize import curve_fit
 
 vals = STOM_higgs_tools.generate_data()
 #%%
+"""Add a cell break above to stop regeneration of data"""
 sns.set_style("ticks")
 # bin_heights, bin_edges, patches = plt.hist(vals, range=[104, 155], bins=30)
 
@@ -48,30 +50,24 @@ print('A is', A)
 
 # popt, pcov = curve_fit(get_B_expectation, bin_centres, bin_edges)
 
-def get_B_expectation(xs, A, lamb):
-    """
-    Return a set of expectation values for the background distribution for the
-    passed in x values.
-    """
-    return [A * np.exp(-x / lamb) for x in xs]
-
-
-# B_x = get_B_expectation(bin_edges, A, lamb)
-B_x = get_B_expectation(bin_edges, 65000, 28.9)
+B_x = STOM_higgs_tools.get_B_expectation(bin_edges, A, lamb)
+# C_x = STOM_higgs_tools.get_B_expectation(bin_edges, 62500, 29.2)
 
 print(B_x)
-plt.plot(bin_edges, B_x, label='B(x)', color='Black')
+sns.lineplot(x=bin_edges, y=B_x, label='B(x)', color='Black')
+# sns.lineplot(x=bin_edges, y=C_x, label='C(x)', color='Purple') # These parameters are taken from the 2D search
+
 plt.legend()
 sns.despine()
 
 plt.show()
 #%%
-"""Takes around 30s to run"""
+"""Takes around a minute to run"""
 a_values = []
 lamb_values = []
 chi_squared = []
 
-for l in np.arange(26, 29, 0.1):
+for l in np.arange(26, 30, 0.1):
     for a in range(60000, 80000, 500):
         result = STOM_higgs_tools.get_B_chi(vals, [104, 119.3], 9, a, l)
         chi_squared.append(result)
@@ -88,8 +84,8 @@ i_chi2min = np.argmin(chi_squared)  # gives index where chi_squared is min.
 print(f"A = {a_values[i_chi2min]}, lamb = {lamb_values[i_chi2min]}, chi2 = {chi_squared[i_chi2min]}")
 print(STOM_higgs_tools.get_B_chi(vals, [104, 119.3], 9, A, lamb))
 
+print(np.sort(chi_squared)[:10])  # This is the 10 smallest chi_squared values for different a and lamb combinations
 #%%
-
 chi_value_background_only = STOM_higgs_tools.get_B_chi(background_data, (104, 119.3), 9, A,
                                                        lamb)  # it is 9 since we consider only before the bump
 print(chi_value_background_only, 'wtaf')
@@ -99,17 +95,6 @@ print(chi_value_with_signal,
       'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
 
 #%%
-
-chi_valus = STOM_higgs_tools.get_B_chi(background_data, (104, 119.3), 9, A,
-                                       lamb)  # it is 9 since we consider only before the bump
-print(chi_valus, 'wtaf')
-
-chi_value = STOM_higgs_tools.get_B_chi(vals, (104, 155), 30, A, lamb)
-print(chi_value,
-      'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
-
-#%%
-
 
 from scipy.stats import chi2
 
@@ -145,7 +130,27 @@ plt.grid()
 plt.xlabel('$\chi^{2}$ Val')
 plt.ylabel('Frequency')
 plt.show()
-# %%
+
+#%%
+
+def exponential(x, A, lamb):
+    return A * np.exp(-x / lamb)
+
+chi_v = []
+
+for i in range(10000):
+    vals = STOM_higgs_tools.generate_data()
+    background_data = [j for j in vals if j < 120]  # to avoid taking the signal bump, upper limit of 120 MeV set
+    popt = curve_fit(exponential, background_data)
+    bin_h, bin_edges = np.histogram(vals, range=[104, 155], bins=30)
+    area_hist = sum(np.diff(background_bin_edges) * background_bin_heights)
+    A = area_hist / (lamb * (np.exp(-104 / lamb) - np.exp(-119.3 / lamb)))
+    B_x = get_B_expectation(bin_edges, A, lamb)
+    chi_valus = STOM_higgs_tools.get_B_chi(background_data, (104, 119.3), 9, A, lamb)
+    chi_v.append(chi_valus)
+
+print(chi_v)
+#%%
 
 
 bin_heights, bin_edges = np.histogram(chi_vals, range=[0, 7], bins=30)
@@ -200,7 +205,6 @@ print(chi_value_gaussfit,
       'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
 
 #%%
-from scipy.optimize import curve_fit
 
 
 def fit_func_optimise(x, a, mu, sig):
