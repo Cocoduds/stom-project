@@ -67,30 +67,28 @@ chi_value_with_signal = STOM_higgs_tools.get_B_chi(vals,(104,155),30,A,lamb)
 print(chi_value_with_signal, 'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
 
 
-#%%
-
-chi_valus = STOM_higgs_tools.get_B_chi(background_data,(104,119.3),9,A,lamb) #it is 9 since we consider only before the bump
-print(chi_valus , 'wtaf')
-
-chi_value = STOM_higgs_tools.get_B_chi(vals,(104,155),30,A,lamb)
-print(chi_value, 'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
-
-
-#%%
-
 
 from scipy.stats import chi2
-p_value_background_only = chi2.sf(chi_valus, 1)
+p_value_background_only = chi2.sf(chi_value_background_only, 1)
 print(p_value_background_only, 'implies we can reject the background only hypotehsis at 10% sig level')
 
-p_value_with_signal = chi2.sf(chi_value, 1)
+p_value_with_signal = chi2.sf(chi_value_with_signal, 1)
 print(p_value_with_signal,'implies can be accepted at 97% confidence level')
+
+#%%
+
+#chi_valus = STOM_higgs_tools.get_B_chi(background_data,(104,119.3),9,A,lamb) #it is 9 since we consider only before the bump
+#print(chi_valus , 'wtaf')
+
+#chi_value = STOM_higgs_tools.get_B_chi(vals,(104,155),30,A,lamb)
+#print(chi_value, 'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
+
 
 #%%
 
 chi_vals = []
 
-for i in range(10000):
+for i in range(100):
     vals = STOM_higgs_tools.generate_data()
     background_data=[j for j in vals if j < 120] #to avoid taking the signal bump, upper limit of 120 MeV set
     lamb = (sigma_background_data)/(N_background) #maximum likelihood estimator for lambda
@@ -99,7 +97,7 @@ for i in range(10000):
     A = area_hist/(lamb*(np.exp(-104/lamb)-np.exp(-119.3/lamb)))
     B_x = get_B_expectation(bin_edges, A, lamb)
     chi_valus = STOM_higgs_tools.get_B_chi(background_data,(104,119.3),9,A,lamb)
-    chi_vals.append(chi_valus)
+    chi_vals.append(chi_value_background_only)
     next
 
 print(chi_vals)
@@ -127,20 +125,19 @@ def fit_func(x):
     expo = A*np.exp(-x/lamb)
     return gaus + expo
 
-
 # bin_heights, bin_edges, patches = plt.hist(vals, range=[104, 155], bins=30)
 
 bin_heights, bin_edges = np.histogram(vals, range=[104, 155], bins=30)
 bin_centres = (bin_edges[:-1] + bin_edges[1:])/2.
 plt.errorbar(bin_centres, bin_heights, np.sqrt(bin_heights), fmt=',', capsize=2)
 
-
-
 x = np.linspace(100,155,200)
 y = fit_func(x)
 
-
+plt.xlabel('Mass, GeV')
+plt.ylabel('Frequency')
 plt.plot(x,y)
+plt.savefig('boyo')
 
 def get_B_chi_gaussian(vals, mass_range, nbins):
     """
@@ -165,6 +162,7 @@ def get_B_chi_gaussian(vals, mass_range, nbins):
 chi_value_gaussfit = get_B_chi_gaussian(vals,(104,155),30)
 print(chi_value_gaussfit, 'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
 
+print(chi2.sf(chi_value_gaussfit, 1))
 
 #%%
 from scipy.optimize import curve_fit
@@ -174,7 +172,7 @@ def fit_func_optimise(x,a,mu,sig):
     expo = A*np.exp(-x/lamb)
     return gaus + expo
 
-fit, cov = curve_fit(fit_func_optimise,bin_centres,bin_heights,p0 = [300,125,1.5])
+fit, cov = curve_fit(fit_func_optimise,bin_centres,bin_heights,p0 = [180,125,1.5])
 
 plt.plot(x, fit_func_optimise(x, *fit))
 
@@ -200,8 +198,12 @@ def get_B_chi_gaussian_optimal(vals, mass_range, nbins):
     return chi / float(nbins - 3)  # B has 2 parameters.
 
 
+print(fit)
+
 chi_value_gaussfit_optimal = get_B_chi_gaussian_optimal(vals,(104,155),30)
 print(chi_value_gaussfit_optimal)
+
+print(chi2.sf(chi_value_gaussfit_optimal,1))
 
 #%%
 
@@ -241,7 +243,8 @@ for mass in masses:
     chi = get_chi_varying_mass(vals,(104,155),30,mass)
     chi_masses.append(chi)
     
-    
+plt.xlabel('Mass, GeV')
+plt.ylabel('$\chi^2$ Values')
 plt.plot(masses,chi_masses)
 
 
