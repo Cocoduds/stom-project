@@ -6,7 +6,7 @@ import seaborn as sns
 from scipy.optimize import curve_fit
 from scipy.stats import chi2
 import scipy
-
+#%%
 vals = STOM_higgs_tools.generate_data()
 #%%
 """Add a cell break above to stop regeneration of data"""
@@ -15,11 +15,11 @@ sns.set_style("ticks")
 
 bin_heights, bin_edges = np.histogram(vals, range=[104, 155], bins=30)
 bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2.
-sns.scatterplot(x=bin_centres, y=bin_heights, s=10)
-plt.errorbar(bin_centres, bin_heights, np.sqrt(bin_heights), fmt=',', capsize=2)
+# sns.scatterplot(x=bin_centres, y=bin_heights, s=25, marker='x', color='blue')
+# plt.errorbar(bin_centres, bin_heights, np.sqrt(bin_heights), fmt=',', capsize=2)
 
-plt.xlabel("$m_{\gamma\gamma} (MeV)$")
-plt.ylabel("Number of entries")
+# plt.xlabel("$m_{\gamma\gamma} (MeV)$")
+# plt.ylabel("Frequency")
 # plt.show()
 
 import scipy.integrate as integrate
@@ -52,33 +52,43 @@ print('A is', A)
 
 # popt, pcov = curve_fit(get_B_expectation, bin_centres, bin_edges)
 
-B_x = STOM_higgs_tools.get_B_expectation(bin_edges, A, lamb)
+B_x = STOM_higgs_tools.get_B_expectation(bin_centres, A, lamb)
 # C_x = STOM_higgs_tools.get_B_expectation(bin_edges, 62500, 29.2)
 
 print(B_x)
-sns.lineplot(x=bin_edges, y=B_x, label='B(x)', color='Black')
+
 # sns.lineplot(x=bin_edges, y=C_x, label='C(x)', color='Purple') # These parameters are taken from the 2D search
 
-plt.legend()
-sns.despine()
-
-plt.show()
+# plt.legend()
+# sns.despine()
+#
+# plt.show()
 #%%
 """Takes around a minute to run"""
 a_values = []
 lamb_values = []
 chi_squared = []
 
-for l in np.arange(26, 30, 0.1):
-    for a in range(60000, 80000, 500):
+for l in np.arange(27, 28, 0.02):
+    for a in range(77000, 80000, 100):
         result = STOM_higgs_tools.get_B_chi(vals, [104, 119.3], 9, a, l)
         chi_squared.append(result)
         lamb_values.append(l)
         a_values.append(a)
 
 sns.set(style="darkgrid")
+
 ax = plt.axes(projection="3d")
 ax.scatter3D(a_values, lamb_values, chi_squared)
+plt.xticks(np.arange(77000, 80000, 500))
+
+ax.set_zlabel('Reduced $\chi^{2}$ value')
+# ax.set_zlim(0, 10)
+
+plt.xlabel('A')
+plt.ylabel('$\lambda$')
+
+
 plt.show()
 #%%
 """Run this after previous cell"""
@@ -98,66 +108,61 @@ print(chi_value_with_signal,
 
 #%%
 
-# =============================================================================
-# p_value_background_only = chi2.sf(chi_valus, 1)
-# print(p_value_background_only, 'implies we can reject the background only hypotehsis at 10% sig level')
-# 
-# p_value_with_signal = chi2.sf(chi_value, 1)
-# print(p_value_with_signal, 'implies can be accepted at 97% confidence level')
-# =============================================================================
+p_value_background_only = chi2.sf(chi_valus, 1)
+print(p_value_background_only, 'implies we can reject the background only hypotehsis at 10% sig level')
+
+p_value_with_signal = chi2.sf(chi_value, 1)
+print(p_value_with_signal, 'implies can be accepted at 97% confidence level')
 
 #%%
-
-
 chi_vals = []
 
-for i in range(100):
+for i in range(10000):
     vals = STOM_higgs_tools.generate_data()
     background_data = [j for j in vals if j < 120]  # to avoid taking the signal bump, upper limit of 120 MeV set
-    lamb = (sigma_background_data) / (N_background)  # maximum likelihood estimator for lambda
+    lamb = sigma_background_data / N_background  # maximum likelihood estimator for lambda
     bin_h, bin_edges = np.histogram(vals, range=[104, 155], bins=30)
     area_hist = sum(np.diff(background_bin_edges) * background_bin_heights)
     A = area_hist / (lamb * (np.exp(-104 / lamb) - np.exp(-119.3 / lamb)))
     B_x = STOM_higgs_tools.get_B_expectation(bin_edges, A, lamb)
     chi_valus = STOM_higgs_tools.get_B_chi(background_data, (104, 119.3), 9, A, lamb)
     chi_vals.append(chi_valus)
-    next
 
 print(chi_vals)
 
 bin_h, bin_e = np.histogram(chi_vals, range=[0, 7], bins=40)
 bin_c = (bin_e[:-1] + bin_e[1:]) / 2.
+sns.scatterplot(x=bin_c, y=bin_h, s=25, marker='x', color='blue')
 plt.errorbar(bin_c, bin_h, np.sqrt(bin_h), fmt=',', capsize=2)
 
-plt.grid()
-plt.xlabel('$\chi^{2}$ Val')
+sns.set_style("ticks")
+sns.despine()
+
+plt.xlabel('Reduced $\chi^{2}$ value')
 plt.ylabel('Frequency')
 plt.show()
 
 
 #%%
 
-# =============================================================================
-# def exponential(x, A, lamb):
-#     return A * np.exp(-x / lamb)
-# 
-# chi_v = []
-# 
-# for i in range(10000):
-#     vals = STOM_higgs_tools.generate_data()
-#     background_data = [j for j in vals if j < 120]  # to avoid taking the signal bump, upper limit of 120 MeV set
-#     popt = curve_fit(exponential, background_data)
-#     bin_h, bin_edges = np.histogram(vals, range=[104, 155], bins=30)
-#     area_hist = sum(np.diff(background_bin_edges) * background_bin_heights)
-#     A = area_hist / (lamb * (np.exp(-104 / lamb) - np.exp(-119.3 / lamb)))
-#     B_x = get_B_expectation(bin_edges, A, lamb)
-#     chi_valus = STOM_higgs_tools.get_B_chi(background_data, (104, 119.3), 9, A, lamb)
-#     chi_v.append(chi_valus)
-# 
-# print(chi_v)
-# =============================================================================
-#%%
+def exponential(x, A, lamb):
+    return A * np.exp(-x / lamb)
 
+chi_v = []
+
+for i in range(10000):
+    vals = STOM_higgs_tools.generate_data()
+    background_data = [j for j in vals if j < 120]  # to avoid taking the signal bump, upper limit of 120 MeV set
+    popt = curve_fit(exponential, background_data)
+    bin_h, bin_edges = np.histogram(vals, range=[104, 155], bins=30)
+    area_hist = sum(np.diff(background_bin_edges) * background_bin_heights)
+    A = area_hist / (lamb * (np.exp(-104 / lamb) - np.exp(-119.3 / lamb)))
+    B_x = get_B_expectation(bin_edges, A, lamb)
+    chi_valus = STOM_higgs_tools.get_B_chi(background_data, (104, 119.3), 9, A, lamb)
+    chi_v.append(chi_valus)
+
+print(chi_v)
+#%%
 
 bin_heights, bin_edges = np.histogram(chi_vals, range=[0, 7], bins=30)
 bin_centres = (bin_edges[:-1] + bin_edges[1:]) / 2.
@@ -167,6 +172,7 @@ plt.show()
 
 
 #%%
+
 def fit_func(x):
     gaus = 700 * np.exp(-(x - 125) ** 2 / (2 * 1.5 ** 2))
     expo = A * np.exp(-x / lamb)
@@ -182,7 +188,8 @@ plt.errorbar(bin_centres_boi, bin_heights_boi, np.sqrt(bin_heights_boi), fmt=','
 x = np.linspace(100, 155, 200)
 y = fit_func(x)
 
-plt.plot(x, y)
+sns.set_style("ticks")
+sns.lineplot(x=x, y=y, label='B+S')
 
 
 def get_B_chi_gaussian(vals, mass_range, nbins):
@@ -211,8 +218,6 @@ print(chi_value_gaussfit,
       'seeing as this is much higher than for the signal only hypothesis, that implies signla-only is not such a good idea')
 
 
-#%%
-
 def fit_func_optimise(x, a, mu, sig, A, lamba):
     gaus = a * np.exp(-(x - mu) ** 2 / (2 * sig ** 2))
     expo = A * np.exp(-x / lamba)
@@ -221,7 +226,7 @@ def fit_func_optimise(x, a, mu, sig, A, lamba):
 
 fit, cov = curve_fit(fit_func_optimise, bin_centres_boi, bin_heights_boi, p0=[300, 125, 1.5,A,lamb])
 
-plt.plot(x, fit_func_optimise(x, *fit))
+sns.lineplot(x=x, y=fit_func_optimise(x, *fit), label='B+S optimised fit')
 
 # =============================================================================
 # print(fit)
@@ -255,9 +260,19 @@ print(chi_value_gaussfit_optimal)
 p_value_gaussfit_optimal = chi2.sf(chi_value_gaussfit_optimal,1)
 
 print(p_value_gaussfit_optimal)
-plt.show()
+sns.lineplot(x=bin_centres, y=B_x, label='B', color='Black', linestyle='--')
+sns.scatterplot(x=bin_centres, y=bin_heights, s=25, marker='x', color='blue')
+# sns.lineplot(x=bin_centres, y=STOM_higgs_tools.get_B_expectation(bin_centres, 77900, 27.62), label='2D search', color="Red")
+sns.despine()
 
+plt.xlabel("$m_{\gamma\gamma}$ (GeV)")
+plt.ylabel("Frequency")
+plt.legend()
+plt.xlim((104, 155))
+plt.savefig("boyo", bbox_inches='tight')
+plt.show()
 #%%
+
 
 def for_looping_chis_gauss(x, mu):
     gaus = fit[0] * np.exp(-(x - mu) ** 2 / (2 * fit[2] ** 2))
@@ -288,18 +303,19 @@ def get_chi_varying_mass(vals, mass_range, nbins, mu):
 
     return chi / float(nbins - 3)  # B has 2 parameters.
 
-
 chi_masses = []
 
 for mass in masses:
     chi = get_chi_varying_mass(vals, (104, 155), 30, mass)
     chi_masses.append(chi)
 
-print(min(chi_masses))
-ttt = np.argmin(chi_masses)
-yes = masses[ttt]
+sns.set_style('ticks')
 
 plt.ylabel('Reduced $\chi^{2}$ Value')
-plt.xlabel('Mass, GeV')
-plt.scatter(yes,min(chi_masses))
-plt.plot(masses, chi_masses)
+plt.xlabel("$m_{\gamma\gamma}$ (GeV)")
+
+sns.lineplot(x=masses, y=chi_masses)
+sns.despine()
+plt.savefig("mass_against_chi", bbox_inches='tight')
+
+plt.show()
